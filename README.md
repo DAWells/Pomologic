@@ -10,7 +10,17 @@ Web scrape all of the pomological water colours from:
 or
 - https://commons.wikimedia.org/wiki/Category:USDA_Pomological_Watercolors
 
-# Download data
+## Download data
 Download details about images and their src url from wikimedia.
 Then download the images. Includes checks to avoid redownloading
 details and images.
+
+## Tidy details
+Extract the date, author, fruit, and variety from details.
+
+## Embed
+Generate embeddings for images following
+https://www.fuzzylabs.ai/blog-post/hugging-face-in-space
+
+## Plots
+Make plots
