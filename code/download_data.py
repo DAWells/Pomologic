@@ -11,7 +11,8 @@ import time
 logging.basicConfig(level=logging.INFO)
 
 # Saving interval
-saving_interval = 10
+saving_interval = 200
+headers = {'User-Agent': 'PomologicBot0.0'}
 
 def parse_details(soup, pom_id):
     description = soup.find_all("div", {"class": "description"})[0].text
@@ -35,7 +36,7 @@ except FileNotFoundError:
 
 # Download details
 details_list = []
-for i in range(50):
+for i in range(7500):
     pom_id = "POM" + str(i).zfill(8)
     logging.info(pom_id)
     url = f"https://commons.wikimedia.org/wiki/File:Pomological_Watercolor_{pom_id}.jpg"
@@ -43,12 +44,12 @@ for i in range(50):
         logging.info(f"Already got {pom_id}")
         continue
     try:
-        page = requests.get(url)
+        page = requests.get(url, headers=headers, timeout=5)
         page.raise_for_status()
         soup = bs(page.content, "html.parser")
         details = parse_details(soup, pom_id)
         details_list.append(details)
-    except requests.exceptions.HTTPError:
+    except (requests.exceptions.HTTPError, requests.ConnectTimeout):
         logging.info(f"Error with {pom_id}")
     # Periodic saving
     if len(details_list) % saving_interval == 0:
@@ -73,8 +74,14 @@ for i,row in details.iterrows():
         logging.info(f"Already got {pom_id}")
         continue
     image_url = row.image_src
-    img_data = requests.get(image_url).content
-    with open(f'data/external/thumbnails/{pom_id}.jpg', 'wb') as handler:
-        handler.write(img_data)
+    try:
+        response = requests.get(image_url, headers=headers, timeout=5)
+        response.raise_for_status()
+        img_data = response.content
+        with open(f'data/external/thumbnails/{pom_id}.jpg', 'wb') as handler:
+            handler.write(img_data)
+    except (requests.exceptions.HTTPError, requests.ConnectTimeout):
+        logging.info(f"Error with {pom_id} image")
     time.sleep(0.2)
+    
 
