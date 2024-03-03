@@ -18,9 +18,17 @@ details and images.
 ## Tidy details
 Extract the date, author, fruit, and variety from details.
 
+## Non-apple embed
+There are so many apples in this dataset.
+Filter to the main, non-apple fruits and generate
+embedings for them.
+
 ## Embed
 Generate embeddings for images following
 https://www.fuzzylabs.ai/blog-post/hugging-face-in-space
+
+## Nonapple plots
+Plot non-apple data. Fruit counts over time and embedding
 
 ## Plots
 Make plots
