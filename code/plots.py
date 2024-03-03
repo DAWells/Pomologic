@@ -9,29 +9,48 @@ from matplotlib import cm
 import umap
 
 details = pd.read_csv("data/interim/tidy_details.csv", index_col=0)
+# Keep only common fruit
+common_fruit = ['apples', 'quinces', 'strawberries', 'oranges', 'lemons', 'grapefruits', 'loquats', 'figs', 'persimmons', 'tangelos']
+details = details[details.fruit.isin(common_fruit)]
 details.fruit = pd.Categorical(details.fruit)
+
 embeddings = pd.read_csv("data/interim/embeddings.csv", index_col=0, header=None)
 
-df = pd.merge(details, embeddings, how="right", left_index=True, right_index=True)
+df = pd.merge(details, embeddings, how="inner", left_index=True, right_index=True)
 
 reducer = umap.UMAP()
 proj = reducer.fit_transform(df.iloc[:, details.shape[1]:].values)
 
-fig, ax = plt.subplots(2)
-ax[0].scatter(
-    proj[:,0],
-    proj[:,1],
-)
-
-ax[1].scatter(
-    proj[:,0],
-    proj[:,1],
-    c=df.fruit.cat.codes,
-    cmap=cm.tab10
-)
+fig, ax = plt.subplots()
+for fruit in df.fruit.cat.categories:
+    fruit
+    mask = df.fruit == fruit
+    ax.scatter(
+        proj[mask, 0],
+        proj[mask, 1],
+        label = fruit
+    )
+ax.legend()
 plt.show()
 
-cm.tab10.get_bad()
+####################
+# Apple embeddings
+####################
+apples = df[df.fruit == "apples"]
+apples.variety = pd.Categorical(apples.variety)
+reducer = umap.UMAP()
+proj = reducer.fit_transform(apples.iloc[:, details.shape[1]:].values)
+
+fig, ax = plt.subplots()
+ax.scatter(
+    proj[:, 0],
+    proj[:, 1],
+    c = apples.variety.cat.codes,
+    cmap = cm.plasma
+)
+ax.legend()
+plt.show()
+
 
 ####################
 # What was painted when
@@ -53,16 +72,17 @@ for y in years:
 year_count = pd.concat(year_count)
 
 totals = {}
-fruit = year_count.columns[:-1]
-for i,f in enumerate(fruit):
-    x = year_count[fruit[:i+1]].cumsum().apply(sum, axis=1)
-    totals[f] = x
+fruits = details.groupby("fruit").size().sort_values().index.tolist()
+
+for i,fruit in enumerate(fruits):
+    x = year_count[fruits[:i+1]].cumsum().apply(sum, axis=1)
+    totals[fruit] = x
 
 fig, ax = plt.subplots()
-for i,f in enumerate(fruit):
-    ax.plot(year_count.year, totals[f], label=f)
-    ymax = totals[f]
-    ymin = totals[fruit[i-1]]
+for i,fruit in enumerate(fruits):
+    ax.plot(year_count.year, totals[fruit], label=fruit)
+    ymax = totals[fruit]
+    ymin = totals[fruits[i-1]]
     if i==0:
         ymin = 0
     ax.fill_between(
@@ -75,6 +95,27 @@ ax.legend()
 plt.show()
 
 
-
 # Who painted what
 # https://python-graph-gallery.com/500-network-chart-with-edge-bundling/
+import networkx as nx
+G = nx.Graph()
+
+details = details[:100]
+
+
+edges = []
+pom_nodes = []
+for i,row in details.iterrows():
+    edges.append((i, row.author))
+    pom_nodes.append((i, {'fruit': row.fruit}))
+
+author_nodes = details.author.unique()
+
+G.add_nodes_from(pom_nodes)
+G.add_nodes_from(author_nodes)
+
+G.add_edges_from(edges)
+
+nx.draw(G,node_color="fruit")
+plt.show()
+
