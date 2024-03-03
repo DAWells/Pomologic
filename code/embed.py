@@ -22,6 +22,10 @@ def create_embedding(model, preprocessed_image) -> torch.Tensor:
     embedding = model(**preprocessed_image).last_hidden_state[:, 0]
     return np.squeeze(embedding)
 
+def batch_embeddings(model, preprocessed_image_list):
+    embedding_list = [create_embedding(model, img) for img in preprocessed_image_list]
+    return embedding_list
+
 # Create a metadata file for huggingface dataloader
 details = pd.read_csv("data/external/details.csv", names=["pom_id", "description", "author", "date", "image_src"])
 metadata = pd.concat([details.pom_id+".jpg", details.pom_id], axis=1)
@@ -41,7 +45,10 @@ image_dataset = image_dataset.map(lambda row: {"preprocessed_image": image_proce
 # Set dataset format to PyTorch
 image_dataset = image_dataset.with_format("pt")
 
-image_dataset = image_dataset.map(lambda img: {"embedding": create_embedding(model, img["preprocessed_image"])})
+# Process all at once, too large for laptop
+# image_dataset = image_dataset.map(lambda img: {"embedding": create_embedding(model, img["preprocessed_image"])})
+# Processes in batches
+image_dataset = image_dataset.map(lambda img: {"embedding": batch_embeddings(model, img["preprocessed_image"])}, batch_size=100, batched=True)
 
 embeddings = pd.concat(
     [
