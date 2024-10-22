@@ -47,6 +47,11 @@ for fruit in naf_df.fruit.cat.categories:
 ax.legend()
 plt.show()
 
+# What are those weird strawberries?
+mask = naf_df.fruit == "strawberries"
+i = np.argmax(naf_proj[mask, 1])
+naf_df[mask].iloc[i]
+
 ####################
 # What was painted when
 ####################
